@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>///  N O T H I N G  ///</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Doto:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --neon: #00ff66;
+    --neon2: #00ffaa;
+    --neon3: #c4ff00;
+    --bg: #000500;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--neon);
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    cursor: crosshair;
+  }
+  canvas#bg {
+    position: fixed; inset: 0; z-index: 0;
+    width: 100%; height: 100%;
+  }
+  canvas#matrix {
+    position: fixed; inset: 0; z-index: 1;
+    width: 100%; height: 100%;
+    opacity: 0.85;
+  }
+  /* CRT scanlines */
+  .scanlines {
+    position: fixed; inset: 0; z-index: 5; pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.25) 3px,
+      rgba(0,0,0,0) 4px
+    );
+    mix-blend-mode: multiply;
+    animation: flicker 4s infinite;
+  }
+  .vignette {
+    position: fixed; inset: 0; z-index: 4; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.85) 100%);
+  }
+  .noise {
+    position: fixed; inset: -50%; z-index: 6; pointer-events: none;
+    opacity: 0.08;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    animation: noiseShift 0.4s steps(2) infinite;
+  }
+  @keyframes noiseShift {
+    0%   { transform: translate(0,0); }
+    25%  { transform: translate(-5%, 3%); }
+    50%  { transform: translate(3%, -4%); }
+    75%  { transform: translate(-2%, -3%); }
+    100% { transform: translate(4%, 2%); }
+  }
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    7% { opacity: 0.7; }
+    8% { opacity: 1; }
+    50% { opacity: 0.95; }
+  }
+  .stage {
+    position: relative; z-index: 10;
+    height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 1rem;
+  }
+  .badge {
+    font-size: 0.75rem;
+    letter-spacing: 0.5em;
+    color: var(--neon3);
+    border: 1px solid var(--neon3);
+    padding: 0.4rem 1rem;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    background: rgba(196,255,0,0.05);
+    box-shadow: 0 0 20px rgba(196,255,0,0.3), inset 0 0 20px rgba(196,255,0,0.1);
+    animation: badgePulse 2s ease-in-out infinite;
+  }
+  @keyframes badgePulse {
+    50% { box-shadow: 0 0 35px rgba(196,255,0,0.6), inset 0 0 30px rgba(196,255,0,0.2); }
+  }
+
+  .glitch {
+    position: relative;
+    font-family: 'Doto', 'VT323', monospace;
+    font-size: clamp(2.5rem, 10vw, 8rem);
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--neon);
+    text-shadow:
+      0 0 8px var(--neon),
+      0 0 22px rgba(0,255,102,0.55),
+      0 0 50px rgba(0,255,102,0.3);
+    white-space: pre;
+  }
+  .cursor-block {
+    display: inline-block;
+    width: 0.5em;
+    height: 0.85em;
+    background: var(--neon);
+    margin-left: 0.1em;
+    vertical-align: -0.05em;
+    box-shadow: 0 0 10px var(--neon);
+    animation: blink 1s steps(2) infinite;
+  }
+  @keyframes glitchTop {
+    0%   { transform: translate(0,0); }
+    20%  { transform: translate(-3px, -1px); }
+    40%  { transform: translate(2px, 1px); }
+    60%  { transform: translate(-1px, 0); }
+    80%  { transform: translate(4px, -2px); }
+    100% { transform: translate(0,0); }
+  }
+  @keyframes glitchBot {
+    0%   { transform: translate(0,0); }
+    20%  { transform: translate(2px, 1px); }
+    40%  { transform: translate(-3px, -1px); }
+    60%  { transform: translate(1px, 2px); }
+    80%  { transform: translate(-2px, 0); }
+    100% { transform: translate(0,0); }
+  }
+
+  .sub {
+    margin-top: 2rem;
+    font-size: clamp(0.8rem, 1.6vw, 1.1rem);
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    max-width: 700px;
+  }
+  .sub .accent { color: var(--neon2); }
+
+  .terminal {
+    margin-top: 2.5rem;
+    font-size: 0.85rem;
+    color: var(--neon3);
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(196,255,0,0.3);
+    padding: 0.6rem 1.2rem;
+    min-width: 320px;
+    text-align: left;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 0 30px rgba(0,240,255,0.15);
+  }
+  .terminal .prompt { color: var(--neon2); }
+  .cursor {
+    display: inline-block;
+    width: 0.6em; height: 1em;
+    background: var(--neon3);
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blink 1s steps(2) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .corners span {
+    position: fixed; z-index: 11;
+    width: 30px; height: 30px;
+    border-color: var(--neon);
+    border-style: solid;
+    border-width: 0;
+    animation: cornerGlow 2s ease-in-out infinite alternate;
+  }
+  .corners .tl { top: 20px; left: 20px; border-top-width: 2px; border-left-width: 2px; }
+  .corners .tr { top: 20px; right: 20px; border-top-width: 2px; border-right-width: 2px; }
+  .corners .bl { bottom: 20px; left: 20px; border-bottom-width: 2px; border-left-width: 2px; }
+  .corners .br { bottom: 20px; right: 20px; border-bottom-width: 2px; border-right-width: 2px; }
+  @keyframes cornerGlow {
+    from { filter: drop-shadow(0 0 4px var(--neon)); }
+    to   { filter: drop-shadow(0 0 14px var(--neon)); }
+  }
+
+  .meta {
+    position: fixed; z-index: 11;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+  }
+  .meta.tl { top: 30px; left: 60px; }
+  .meta.tr { top: 30px; right: 60px; }
+  .meta.bl { bottom: 30px; left: 60px; color: var(--neon2); }
+  .meta.br { bottom: 30px; right: 60px; color: var(--neon3); }
+
+  .marquee {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    z-index: 7;
+    overflow: hidden;
+    border-top: 1px solid rgba(255,43,214,0.3);
+    background: linear-gradient(90deg, rgba(255,43,214,0.1), rgba(0,240,255,0.1));
+    padding: 0.4rem 0;
+    font-size: 0.7rem;
+    letter-spacing: 0.4em;
+    color: rgba(255,255,255,0.6);
+    white-space: nowrap;
+  }
+  .marquee-track {
+    display: inline-block;
+    padding-left: 100%;
+    animation: scroll 30s linear infinite;
+  }
+  @keyframes scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-100%); }
+  }
+
+  @media (max-width: 600px) {
+    .meta.tl, .meta.tr { display: none; }
+  }
+</style>
+</head>
+<body>
+  <canvas id="matrix"></canvas>
+  <div class="vignette"></div>
+  <div class="scanlines"></div>
+  <div class="noise"></div>
+
+  <div class="corners">
+    <span class="tl"></span><span class="tr"></span>
+    <span class="bl"></span><span class="br"></span>
+  </div>
+
+  <div class="meta tl">SYS::FWDEV</div>
+  <div class="meta tr" id="clock">00:00:00 UTC</div>
+  <div class="meta bl">NODE //  PRIVATE</div>
+  <div class="meta br">REC ●</div>
+
+  <main class="stage">
+    <div class="badge">⚠ &nbsp; Restricted Zone &nbsp; ⚠</div>
+    <h1 class="glitch" id="headline" data-text="">&nbsp;<span class="cursor-block"></span></h1>
+    <p class="sub">
+      You've stumbled onto a <span class="accent">development sandbox</span>.<br>
+      Ask your developer for the <span class="accent">secret URL</span>.
+    </p>
+    <div class="terminal">
+      <span class="prompt">root@fwdev:~$</span> <span id="typed"></span><span class="cursor"></span>
+    </div>
+  </main>
+
+  <div class="marquee">
+    <div class="marquee-track">
+      ▲ FWDEV PRIVATE TESTING NODE ▲ &nbsp;&nbsp;◆&nbsp;&nbsp; UNAUTHORIZED ACCESS LOGGED &nbsp;&nbsp;◆&nbsp;&nbsp; ALL CLIENT WORKSPACES ROUTED VIA SUBDOMAIN &nbsp;&nbsp;◆&nbsp;&nbsp; STATUS: OPERATIONAL &nbsp;&nbsp;◆&nbsp;&nbsp; THIS PAGE INTENTIONALLY UNINTERESTING &nbsp;&nbsp;◆&nbsp;&nbsp;
+    </div>
+  </div>
+
+<script>
+/* === Matrix rain === */
+const mc = document.getElementById('matrix');
+const mctx = mc.getContext('2d');
+let MW, MH, cols, drops, fontSize;
+const glyphs = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎ0123456789ABCDEF<>/\\|*+=-#$%&@';
+function mResize() {
+  MW = mc.width = window.innerWidth;
+  MH = mc.height = window.innerHeight;
+  fontSize = Math.max(14, Math.floor(window.innerWidth / 90));
+  cols = Math.floor(MW / fontSize);
+  drops = new Array(cols).fill(0).map(() => Math.random() * -50);
+}
+window.addEventListener('resize', mResize); mResize();
+function matrixFrame() {
+  mctx.fillStyle = 'rgba(0, 5, 0, 0.08)';
+  mctx.fillRect(0, 0, MW, MH);
+  mctx.font = fontSize + "px 'Share Tech Mono', monospace";
+  for (let i = 0; i < cols; i++) {
+    const ch = glyphs[Math.floor(Math.random() * glyphs.length)];
+    const x = i * fontSize;
+    const y = drops[i] * fontSize;
+    /* head glyph bright */
+    mctx.fillStyle = 'rgba(200,255,220,0.95)';
+    mctx.fillText(ch, x, y);
+    /* trail */
+    mctx.fillStyle = 'rgba(0,255,102,0.85)';
+    mctx.fillText(ch, x, y);
+    if (y > MH && Math.random() > 0.975) drops[i] = 0;
+    drops[i] += 0.6 + Math.random() * 0.4;
+  }
+  requestAnimationFrame(matrixFrame);
+}
+matrixFrame();
+
+/* === terminal typing === */
+const lines = [
+  'access --level=public',
+  'ERR: insufficient_clearance',
+  'redirect → *.fwdev.local',
+  'whoami',
+  'guest@nowhere',
+  'ls -la /secrets',
+  'ls: cannot access: nice try',
+  'fortune | cowsay',
+  '"the cake is a lie"',
+];
+const el = document.getElementById('typed');
+let li = 0, ci = 0, deleting = false;
+function tick() {
+  const cur = lines[li];
+  if (!deleting) {
+    el.textContent = cur.slice(0, ++ci);
+    if (ci === cur.length) { deleting = true; setTimeout(tick, 1400); return; }
+  } else {
+    el.textContent = cur.slice(0, --ci);
+    if (ci === 0) { deleting = false; li = (li+1) % lines.length; }
+  }
+  setTimeout(tick, deleting ? 25 : 55 + Math.random()*40);
+}
+tick();
+
+/* === clock === */
+function clock() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('clock').textContent =
+    `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} UTC`;
+}
+setInterval(clock, 1000); clock();
+
+/* === headline self-typing === */
+const headline = document.getElementById('headline');
+const cursorBlock = '<span class="cursor-block"></span>';
+const phrases = [
+  'NOTHING_TO_SEE_HERE',
+  'ACCESS_DENIED',
+  'MOVE_ALONG.EXE',
+  '> /dev/null',
+  '404_PURPOSE',
+];
+let pi = 0, pc = 0, pdel = false;
+function typeHeadline() {
+  const cur = phrases[pi];
+  if (!pdel) {
+    pc++;
+    headline.innerHTML = cur.slice(0, pc) + cursorBlock;
+    headline.setAttribute('data-text', cur.slice(0, pc));
+    if (pc >= cur.length) { pdel = true; setTimeout(typeHeadline, 2200); return; }
+  } else {
+    pc--;
+    headline.innerHTML = cur.slice(0, pc) + cursorBlock;
+    headline.setAttribute('data-text', cur.slice(0, pc));
+    if (pc <= 0) { pdel = false; pi = (pi + 1) % phrases.length; }
+  }
+  setTimeout(typeHeadline, pdel ? 40 : 90 + Math.random() * 80);
+}
+typeHeadline();
+
+</script>
+</body>
+</html>
